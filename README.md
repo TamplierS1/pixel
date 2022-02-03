@@ -1,6 +1,6 @@
 ## pixel 
 
-Code editor written in C++ using Qt;
+Text editor written in C++ using Qt
 
 ## Build
 
