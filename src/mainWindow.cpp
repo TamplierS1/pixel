@@ -10,6 +10,21 @@
 
 #include "mainWindow.h"
 
+static QString getFileNameFromPath(const QString& path)
+{
+    if (path.isEmpty())
+        return path;
+
+    QString filename;
+    for (int i = path.size() - 1; i < 0; i--)
+    {
+        if (path[i] == '/')
+            break;
+        filename.prepend(path[i]);
+    }
+    return filename;
+}
+
 MainWindow::MainWindow(int width, int height, std::string_view title, QWidget* parent)
     : QMainWindow(parent)
 {
@@ -24,13 +39,17 @@ void MainWindow::createMenus()
 {
     QMenu* fileMenu = menuBar()->addMenu("&File");
 
-    QAction* quit = new QAction{"&Quit", this};
-    fileMenu->addAction(quit);
-    connect(quit, &QAction::triggered, qApp, QApplication::quit);
-
     QAction* open = new QAction{"&Open", this};
     fileMenu->addAction(open);
     connect(open, &QAction::triggered, this, &MainWindow::openFileDialog);
+
+    QAction* save = new QAction{"&Save", this};
+    fileMenu->addAction(save);
+    connect(save, &QAction::triggered, this, &MainWindow::saveFileDialog);
+
+    QAction* quit = new QAction{"&Quit", this};
+    fileMenu->addAction(quit);
+    connect(quit, &QAction::triggered, qApp, QApplication::quit);
 }
 
 void MainWindow::createEditor()
@@ -45,6 +64,12 @@ void MainWindow::openFileDialog()
         QFileDialog::getOpenFileName(this, "Open File to Edit", mDefaultStartDir);
 
     openFileForEditing(mPathToCurrentFile);
+}
+
+void MainWindow::saveFileDialog()
+{
+    QFileDialog::saveFileContent(mEditor->toPlainText().toLocal8Bit(),
+                                 getFileNameFromPath(mPathToCurrentFile));
 }
 
 void MainWindow::openFileForEditing(const QString& name)

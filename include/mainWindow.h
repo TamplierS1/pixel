@@ -14,6 +14,7 @@ private:
     void createEditor();
 
     void openFileDialog();
+    void saveFileDialog();
     void openFileForEditing(const QString& name);
 
     QString mDefaultStartDir = ".";
