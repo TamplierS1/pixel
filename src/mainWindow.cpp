@@ -1,12 +1,14 @@
-#include <string_view>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
 
 #include <QMenu>
 #include <QMenuBar>
 #include <QApplication>
 #include <QTextEdit>
 #include <QFileDialog>
+
+#include "nlohmann/json.hpp"
 
 #include "mainWindow.h"
 
@@ -33,6 +35,11 @@ MainWindow::MainWindow(int width, int height, std::string_view title, QWidget* p
 
     createMenus();
     createEditor();
+
+    readCache();
+
+    if (!mPathToCurrentFile.isEmpty())
+        openFileForEditing(mPathToCurrentFile);
 }
 
 void MainWindow::createMenus()
@@ -45,11 +52,14 @@ void MainWindow::createMenus()
 
     QAction* save = new QAction{"&Save", this};
     fileMenu->addAction(save);
+    connect(save, &QAction::triggered, this, &MainWindow::saveCache);
     connect(save, &QAction::triggered, this, &MainWindow::saveFileDialog);
 
     QAction* quit = new QAction{"&Quit", this};
     fileMenu->addAction(quit);
     connect(quit, &QAction::triggered, qApp, QApplication::quit);
+
+    connect(qApp, &QApplication::aboutToQuit, this, &MainWindow::saveCache);
 }
 
 void MainWindow::createEditor()
@@ -80,4 +90,34 @@ void MainWindow::openFileForEditing(const QString& name)
     contents << file.rdbuf();
 
     mEditor->setText(contents.str().c_str());
+}
+
+void MainWindow::readCache()
+{
+    std::string cache_path = std::filesystem::temp_directory_path().string().append(
+        "/" + mCacheFileName.toStdString());
+
+    if (!std::filesystem::exists(cache_path))
+        return;
+
+    std::fstream cache{cache_path};
+    nlohmann::json jcache;
+    cache >> jcache;
+
+    mPathToCurrentFile = jcache["last_opened_file"].get<std::string>().c_str();
+    if (!std::filesystem::exists(mPathToCurrentFile.toStdString()))
+        mPathToCurrentFile.clear();
+}
+
+void MainWindow::saveCache() const
+{
+    std::string cache_path = std::filesystem::temp_directory_path().string().append(
+        "/" + mCacheFileName.toStdString());
+
+    std::ofstream cache{cache_path};
+
+    nlohmann::json jcache;
+    jcache["last_opened_file"] = mPathToCurrentFile.toStdString();
+
+    cache << jcache;
 }

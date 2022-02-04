@@ -4,7 +4,7 @@
 
 TEMPLATE = app
 TARGET = pixel
-INCLUDEPATH += include
+INCLUDEPATH += include third_party/json/single_include
 
 # You can make your code fail to compile if you use deprecated APIs.
 # In order to do so, uncomment the following line.
