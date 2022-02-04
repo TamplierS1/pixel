@@ -17,8 +17,12 @@ private:
     void saveFileDialog();
     void openFileForEditing(const QString& name);
 
+    void readCache();
+    void saveCache() const;
+
     QString mDefaultStartDir = ".";
     QString mPathToCurrentFile;
+    QString mCacheFileName = "pixel_cache.json";
 
     QTextEdit* mEditor = nullptr;
 };
