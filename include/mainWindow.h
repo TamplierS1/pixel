@@ -15,7 +15,8 @@ private:
 
     void openFileDialog();
     void saveFileDialog();
-    void openFileForEditing(const QString& name);
+    void readFile(const QString& name);
+    void saveCurrentFile();
 
     void readCache();
     void saveCache() const;
