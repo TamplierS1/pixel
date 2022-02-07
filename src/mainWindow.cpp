@@ -7,6 +7,7 @@
 #include <QApplication>
 #include <QTextEdit>
 #include <QFileDialog>
+#include <QKeyEvent>
 
 #include "nlohmann/json.hpp"
 
@@ -39,7 +40,9 @@ MainWindow::MainWindow(int width, int height, std::string_view title, QWidget* p
     readCache();
 
     if (!mPathToCurrentFile.isEmpty())
-        openFileForEditing(mPathToCurrentFile);
+        readFile(mPathToCurrentFile);
+
+    setFocusPolicy(Qt::StrongFocus);
 }
 
 void MainWindow::createMenus()
@@ -47,15 +50,27 @@ void MainWindow::createMenus()
     QMenu* fileMenu = menuBar()->addMenu("&File");
 
     QAction* open = new QAction{"&Open", this};
+    open->setShortcut(QKeySequence{"Ctrl+O"});
     fileMenu->addAction(open);
     connect(open, &QAction::triggered, this, &MainWindow::openFileDialog);
 
+    QAction* saveAs = new QAction{"&Save As", this};
+    saveAs->setShortcut(QKeySequence{"Ctrl+Shift+S"});
+    fileMenu->addAction(saveAs);
+    connect(saveAs, &QAction::triggered, this, &MainWindow::saveCache);
+    connect(saveAs, &QAction::triggered, this, &MainWindow::saveFileDialog);
+
+    // TODO: only works after you restart the app when creating a new file.
+    // Create a FileDialog (instead of using QFileDialog::saveFileContent) by hand to fix
+    // this.
     QAction* save = new QAction{"&Save", this};
+    save->setShortcut(QKeySequence{"Ctrl+S"});
     fileMenu->addAction(save);
     connect(save, &QAction::triggered, this, &MainWindow::saveCache);
-    connect(save, &QAction::triggered, this, &MainWindow::saveFileDialog);
+    connect(save, &QAction::triggered, this, &MainWindow::saveCurrentFile);
 
     QAction* quit = new QAction{"&Quit", this};
+    quit->setShortcut(QKeySequence{"Ctrl+Shift+Q"});
     fileMenu->addAction(quit);
     connect(quit, &QAction::triggered, qApp, QApplication::quit);
 
@@ -73,7 +88,7 @@ void MainWindow::openFileDialog()
     mPathToCurrentFile =
         QFileDialog::getOpenFileName(this, "Open File to Edit", mDefaultStartDir);
 
-    openFileForEditing(mPathToCurrentFile);
+    readFile(mPathToCurrentFile);
 }
 
 void MainWindow::saveFileDialog()
@@ -82,7 +97,7 @@ void MainWindow::saveFileDialog()
                                  getFileNameFromPath(mPathToCurrentFile));
 }
 
-void MainWindow::openFileForEditing(const QString& name)
+void MainWindow::readFile(const QString& name)
 {
     std::fstream file{name.toStdString()};
 
@@ -90,6 +105,19 @@ void MainWindow::openFileForEditing(const QString& name)
     contents << file.rdbuf();
 
     mEditor->setText(contents.str().c_str());
+}
+
+void MainWindow::saveCurrentFile()
+{
+    if (mPathToCurrentFile.isEmpty())
+    {
+        saveFileDialog();
+        return;
+    }
+
+    std::ofstream file{mPathToCurrentFile.toStdString()};
+
+    file << mEditor->toPlainText().toStdString();
 }
 
 void MainWindow::readCache()
